@@ -1,0 +1,76 @@
+examples: {}
+examples_2: {}
+examples_3: {}
+ignoreObjectsWithNoProperties: true
+ignorePotentialIncorrectType: true
+operationIds:
+  /contact/{customerId}/id/{id}:
+    get: Contact_getContactById
+  /contact/{customerId}/phone/{phoneNumber}:
+    get: Contact_getContactByPhone
+  /customers:
+    get: Customers_getAllCustomers
+    post: Customers_createCustomer
+  /customers/{id}:
+    delete: Customers_deleteCustomer
+    get: Customers_getCustomerById
+    put: Customers_updateCustomer
+  /messages:
+    post: Messages_sendMessageToContact
+  /messages/phone-number:
+    post: Messages_sendMessageToPhoneNumber
+  /sms:
+    get: Sms_GetContactInfo
+  /templates:
+    get: Templates_getTemplatesForCustomer
+    post: Templates_createTemplate
+  /whatsapp:
+    get: Whatsapp_getWhatsappContact
+operationTags: {}
+renameTags: {}
+requestSchemaNames:
+  /customers:
+    post:
+      application/json: CustomersCreateCustomerRequest
+responseDescriptions: {}
+responseSchemaNames:
+  /customers:
+    get:
+      '200':
+        application/json: CustomersGetAllCustomersResponse
+  /messages:
+    post:
+      '200':
+        application/json: MessagesSendMessageToContactResponse
+      '400':
+        application/json: MessagesSendMessageToContact400Response
+  /messages/phone-number:
+    post:
+      '200':
+        application/json: MessagesSendMessageToPhoneNumberResponse
+  /sms:
+    get:
+      '400':
+        application/json: SmsGetContactInfoResponse
+  /templates:
+    get:
+      '200':
+        application/json: TemplatesGetTemplatesForCustomerResponse
+  /whatsapp:
+    get:
+      '400':
+        application/json: WhatsappGetWhatsappContactResponse
+securityParameters:
+  customerId:
+    query: false
+  page:
+    query: false
+  pageSize:
+    query: false
+  phoneNumber:
+    query: false
+  retrieveIfDoesNotExists:
+    query: false
+  sentId:
+    query: false
+validServerUrls: {}

@@ -1,0 +1,942 @@
+openapi: 3.0.0
+info:
+  title: TextHive Core API
+  description: >-
+    TextHive is a unified messaging API that enables developers to seamlessly
+    send messages across multiple channels including SMS and WhatsApp. It
+    provides programmatic management of customer accounts, messaging
+    capabilities with intelligent routing, message delivery, and template
+    management. The API supports creating, updating, and managing customer
+    profiles, sending messages using templates, retrieving contact information,
+    and handling templates across different messaging channels.
+  version: 1.1.0
+  contact:
+    name: Sent API Support
+    email: developers@texthive.khulnasoft.com
+    url: https://www.texthive.khulnasoft.com/
+  termsOfService: https://www.texthive.khulnasoft.com/resources/terms-of-service
+  x-konfig-ignore:
+    object-with-no-properties: true
+    potential-incorrect-type: true
+tags:
+  - description: Create, update, and manage customer accounts with the Sent API
+    name: Customers
+  - description: Lookup phone numbers and manage contacts with the Sent API
+    name: Contact
+  - description: Send and manage messages across multiple channels with the Sent API
+    name: Messages
+  - description: Create and manage message templates with the Sent API
+    name: Templates
+  - description: >-
+      Retrieve and manage SMS contact information and capabilities with the Sent
+      API
+    name: SMS
+  - description: >-
+      Retrieve and manage WhatsApp contact information and capabilities with the
+      Sent API
+    name: Whatsapp
+paths:
+  /contact/{customerId}/id/{id}:
+    get:
+      tags:
+        - Contact
+      summary: Retrieve a contact by ID
+      operationId: Contact_getContactById
+      description: >-
+        Fetches detailed contact information including available messaging
+        channels and verification status. Use this endpoint when you need to
+        look up a specific contact using their unique identifier.
+      parameters:
+        - description: Unique identifier of the customer account
+          name: customerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - description: Unique identifier of the contact
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Contact details successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+              example:
+                id: 123e4567-e89b-12d3-a456-426614174000
+                phoneNumber: '+1234567890'
+                countryCode: US
+                nationalFormat: (123) 456-7890
+                availableChannels: SMS,WHATSAPP
+                defaultChannel: WHATSAPP
+                verified: true
+                createdAt: '2023-01-01T12:00:00Z'
+                updatedAt: '2023-01-01T12:00:00Z'
+        '401':
+          description: Authentication credentials are missing or invalid
+        '404':
+          description: Contact not found
+  /contact/{customerId}/phone/{phoneNumber}:
+    get:
+      tags:
+        - Contact
+      summary: Retrieve a contact by phone number
+      operationId: Contact_getContactByPhone
+      description: >-
+        Looks up contact information using a phone number. This endpoint is
+        useful when you need to find a contact's details but only have their
+        phone number. It returns the same detailed information as the ID-based
+        lookup.
+      parameters:
+        - description: Unique identifier of the customer account
+          name: customerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - description: Phone number in E.164 format (e.g., +1234567890)
+          name: phoneNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Contact details successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+              example:
+                id: 123e4567-e89b-12d3-a456-426614174000X
+                phoneNumber: '+1234567890'
+                countryCode: US
+                nationalFormat: (123) 456-7890
+                availableChannels: SMS,WHATSAPP
+                defaultChannel: WHATSAPP
+                verified: true
+                createdAt: '2023-01-01T12:00:00Z'
+                updatedAt: '2023-01-01T12:00:00Z'
+        '401':
+          description: Authentication credentials are missing or invalid
+        '404':
+          description: Contact not found
+  /messages:
+    post:
+      tags:
+        - Messages
+      summary: Send a message to a contact using a template
+      operationId: Messages_sendMessageToContact
+      description: >-
+        Sends a templated message to a specific contact. The platform
+        automatically determines the optimal channel (SMS or WhatsApp) based on
+        the contact's preferences and availability. Messages are sent using
+        pre-defined templates to ensure consistent formatting and compliance
+        across channels.
+      requestBody:
+        description: Message details including customer ID, contact ID, and template ID
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageToContactRequest'
+            example:
+              customerId: 550e8400-e29b-41d4-a716-446655440000
+              contactId: 7c11e821-c839-4c3d-8a89-1f78b71a0c38
+              templateId: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+        required: true
+      responses:
+        '200':
+          description: Message successfully queued for delivery
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagesSendMessageToContactResponse'
+              example:
+                messageId: 123e4567-e89b-12d3-a456-426614174000
+                status: queued
+                channel: whatsapp
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagesSendMessageToContact400Response'
+        '401':
+          description: Unauthorized - Invalid or missing API key
+        '404':
+          description: Contact, template, or customer not found
+  /messages/phone-number:
+    post:
+      tags:
+        - Messages
+      summary: Send a message to a phone number using a template
+      operationId: Messages_sendMessageToPhoneNumber
+      description: >-
+        Sends a templated message directly to a phone number without requiring a
+        pre-existing contact. The system will attempt to determine the best
+        channel for delivery and create a contact record if one doesn't exist.
+      requestBody:
+        description: Message details including customer ID, phone number, and template ID
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageToPhoneNumberRequest'
+            example:
+              customerId: 550e8400-e29b-41d4-a716-446655440000
+              phoneNumber: '+1234567890'
+              templateId: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+        required: true
+      responses:
+        '200':
+          description: Message successfully queued for delivery
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagesSendMessageToPhoneNumberResponse'
+              example:
+                messageId: 123e4567-e89b-12d3-a456-426614174000
+                status: queued
+                channel: whatsapp
+                contactId: 7c11e821-c839-4c3d-8a89-1f78b71a0c38
+        '400':
+          description: Invalid phone number or request parameters
+        '401':
+          description: Unauthorized - Invalid or missing API key
+        '404':
+          description: Template or customer not found
+  /templates:
+    post:
+      tags:
+        - Templates
+      summary: Create a new message template
+      operationId: Templates_createTemplate
+      description: >-
+        Creates a new message template that can be used for sending standardized
+        messages across different channels. Templates ensure consistent
+        messaging and support variable substitution.
+      requestBody:
+        description: Template creation details including customer ID and template name
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreateRequest'
+            example:
+              customerId: 550e8400-e29b-41d4-a716-446655440000
+              name: Order Confirmation
+        required: true
+      responses:
+        '200':
+          description: Template created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsesTemplateResponse'
+              example:
+                id: 123e4567-e89b-12d3-a456-426614174000X
+                customerId: 550e8400-e29b-41d4-a716-446655440000
+                name: Order Confirmation
+                category: transactional
+                rawBody: 'Your order #{{orderId}} has been confirmed.'
+                whatsappTemplateName: order_confirmation
+                whatsappTemplateStatus: approved
+                createdAt: '2023-01-01T12:00:00Z'
+                updatedAt: '2023-01-01T12:00:00Z'
+    get:
+      tags:
+        - Templates
+      summary: Retrieve all templates for a customer
+      operationId: Templates_getTemplatesForCustomer
+      description: >-
+        Returns a list of all message templates associated with the specified
+        customer ID. Templates are returned in descending order by creation
+        date.
+      parameters:
+        - description: Unique identifier of the customer
+          name: customerId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of templates retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplatesGetTemplatesForCustomerResponse'
+              example:
+                - id: 123e4567-e89b-12d3-a456-426614174000X
+                  customerId: 550e8400-e29b-41d4-a716-446655440000
+                  name: Order Confirmation
+                  category: transactional
+                  rawBody: 'Your order #{{orderId}} has been confirmed.'
+                  whatsappTemplateName: order_confirmation
+                  whatsappTemplateStatus: approved
+                  createdAt: '2023-01-01T12:00:00Z'
+                  updatedAt: '2023-01-01T12:00:00Z'
+                - id: 223e4567-e89b-12d3-a456-426614174001
+                  customerId: 550e8400-e29b-41d4-a716-446655440000
+                  name: Shipping Update
+                  category: transactional
+                  rawBody: 'Your order #{{orderId}} has been shipped.'
+                  whatsappTemplateName: shipping_update
+                  whatsappTemplateStatus: pending
+                  createdAt: '2023-02-01T12:00:00Z'
+                  updatedAt: '2023-02-01T12:00:00Z'
+        '401':
+          description: Authentication credentials are missing or invalid
+  /customers:
+    post:
+      tags:
+        - Customers
+      summary: Create a new customer account
+      operationId: Customers_createCustomer
+      description: >-
+        Creates a new customer account in the Sent platform. This endpoint
+        initializes a new customer profile with basic information and returns
+        the created customer details including generated IDs and credentials for
+        various messaging channels.
+      requestBody:
+        description: Customer name to create the account
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomersCreateCustomerRequest'
+            example: Acme Corp
+        required: true
+      responses:
+        '200':
+          description: Customer successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+              example:
+                id: 123e4567-e89b-12d3-a456-426614174000X
+                name: Acme Corp
+                sendingPhoneNumber: '+1234567890'
+                smsMessagingProfileId: msg_prof_123
+                smsBearerToken: sms_token_xyz
+                createdAt: '2023-01-01T12:00:00Z'
+                updatedAt: '2023-01-01T12:00:00Z'
+        '401':
+          description: Authentication credentials are missing or invalid
+    get:
+      tags:
+        - Customers
+      summary: Retrieve all customers with pagination
+      operationId: Customers_getAllCustomers
+      description: >-
+        Returns a paginated list of all customers. Use page and pageSize
+        parameters to control the number of results returned. Results are sorted
+        by creation date in descending order.
+      parameters:
+        - description: Page number to retrieve (starts from 1)
+          name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            example: 1
+        - description: Number of items to return per page
+          name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            example: 20
+      responses:
+        '200':
+          description: List of customers retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomersGetAllCustomersResponse'
+              example:
+                - id: 123e4567-e89b-12d3-a456-426614174000X
+                  name: Acme Corp
+                  sendingPhoneNumber: '+1234567890'
+                  smsMessagingProfileId: msg_prof_123
+                  smsBearerToken: sms_token_xyz
+                  createdAt: '2023-01-01T12:00:00Z'
+                  updatedAt: '2023-01-01T12:00:00Z'
+                - id: 223e4567-e89b-12d3-a456-426614174001X
+                  name: Beta LLC
+                  sendingPhoneNumber: '+1987654321'
+                  smsMessagingProfileId: msg_prof_456
+                  smsBearerToken: sms_token_abc
+                  createdAt: '2023-02-01T12:00:00Z'
+                  updatedAt: '2023-02-01T12:00:00Z'
+        '401':
+          description: Authentication credentials are missing or invalid
+  /customers/{id}:
+    get:
+      tags:
+        - Customers
+      summary: Retrieve a customer by ID
+      operationId: Customers_getCustomerById
+      description: >-
+        Returns detailed information about a specific customer including their
+        messaging channel configurations and credentials.
+      parameters:
+        - description: Unique identifier of the customer
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Customer details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+              example:
+                id: 123e4567-e89b-12d3-a456-426614174000X
+                name: Acme Corp
+                sendingPhoneNumber: '+1234567890'
+                smsMessagingProfileId: msg_prof_123
+                smsBearerToken: sms_token_xyz
+                createdAt: '2023-01-01T12:00:00Z'
+                updatedAt: '2023-01-01T12:00:00Z'
+        '404':
+          description: Customer not found
+    put:
+      tags:
+        - Customers
+      summary: Update customer information
+      operationId: Customers_updateCustomer
+      description: >-
+        Updates an existing customer's information including messaging channel
+        configurations. All fields in the request body will override existing
+        values.
+      parameters:
+        - description: Unique identifier of the customer to update
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Updated customer information
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomersUpdateCustomerRequest'
+            example:
+              name: Acme Corporation
+              sendingPhoneNumber: '+1234567890'
+              smsMessagingProfileId: msg_prof_789
+              smsBearerToken: sms_token_def
+        required: true
+      responses:
+        '200':
+          description: Customer updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+              example:
+                id: 123e4567-e89b-12d3-a456-426614174000X
+                name: Acme Corporation
+                sendingPhoneNumber: '+1234567890'
+                smsMessagingProfileId: msg_prof_789
+                smsBearerToken: sms_token_def
+                createdAt: '2023-01-01T12:00:00Z'
+                updatedAt: '2023-03-01T12:00:00Z'
+        '401':
+          description: Authentication credentials are missing or invalid
+        '404':
+          description: Customer not found
+    delete:
+      tags:
+        - Customers
+      summary: Delete a customer
+      operationId: Customers_deleteCustomer
+      description: >-
+        Permanently deletes a customer and all associated data. This action
+        cannot be undone. All active services for this customer will be
+        terminated.
+      parameters:
+        - description: Unique identifier of the customer to delete
+          name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Customer successfully deleted
+        '404':
+          description: Customer not found
+  /sms:
+    get:
+      tags:
+        - SMS
+      summary: Retrieve SMS contact information and capabilities
+      operationId: Sms_GetContactInfo
+      description: >-
+        Fetches or creates SMS contact information for a given phone number.
+        This endpoint validates the phone number, determines SMS capabilities,
+        and returns detailed formatting information needed for message delivery.
+        Use this before sending messages to ensure proper SMS channel
+        availability.
+      parameters:
+        - description: Target phone number in E.164 format (e.g., +1234567890)
+          name: phoneNumber
+          in: query
+          required: true
+          schema:
+            type: string
+          example: '+14155552671'
+        - description: When true, creates a new SMS contact if one doesn't exist
+          name: retrieveIfDoesNotExists
+          in: query
+          required: true
+          schema:
+            type: boolean
+        - description: Optional Sent platform identifier for existing contacts
+          name: sentId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+      responses:
+        '200':
+          description: Successfully retrieved SMS contact information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SMSPayload'
+              example:
+                id: 123e4567-e89b-12d3-a456-426614174000X
+                sentId: 123e4567-e89b-12d3-a456-426614174111
+                phoneNumber: '+14155552671'
+                countryCode: US
+                validNumber: true
+                nationalFormat: (415) 555-2671
+                payload: '{"carrier":"Verizon","type":"mobile"}'
+                createdAt: '2023-01-01T12:00:00Z'
+                updatedAt: '2023-01-01T12:00:00Z'
+        '400':
+          description: Invalid phone number format or request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmsGetContactInfoResponse'
+        '401':
+          description: Unauthorized - Invalid or missing API key
+  /whatsapp:
+    get:
+      tags:
+        - Whatsapp
+      summary: Retrieve WhatsApp contact information
+      operationId: Whatsapp_getWhatsappContact
+      description: >-
+        Fetches or creates WhatsApp contact information for a given phone
+        number. This endpoint validates WhatsApp availability and returns
+        detailed contact metadata including business account status and profile
+        information.
+      parameters:
+        - description: Phone number in international format (E.164)
+          name: phoneNumber
+          in: query
+          required: true
+          schema:
+            type: string
+            example: '+14155552671'
+        - description: Whether to create a new contact if one doesn't exist
+          name: retrieveIfDoesNotExists
+          in: query
+          required: true
+          schema:
+            type: boolean
+            default: false
+        - description: Optional Sent platform identifier for tracking
+          name: sentId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+      responses:
+        '200':
+          description: Successfully retrieved WhatsApp contact information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsAppPayload'
+              example:
+                id: 123e4567-e89b-12d3-a456-426614174000X
+                sentId: 123e4567-e89b-12d3-a456-426614174111
+                phoneNumber: '+14155552671'
+                whatsappId: '14155552671'
+                countryCode: US
+                numberType: MOBILE
+                profilePicture: https://profile.whatsapp.com/photo.jpg
+                isBusiness: false
+                invalidRecord: false
+                createdAt: '2023-01-01T12:00:00Z'
+                updatedAt: '2023-01-01T12:00:00Z'
+        '400':
+          description: Invalid phone number format or request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsappGetWhatsappContactResponse'
+        '401':
+          description: Unauthorized - Invalid or missing API key
+        '404':
+          description: WhatsApp contact not found and creation not requested
+components:
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      name: x-api-key
+      in: header
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Contact:
+      description: >-
+        Represents a contact in the Sent messaging platform with their
+        communication preferences and channel availability
+      type: object
+      properties:
+        id:
+          description: Unique identifier for the contact
+          type: string
+          format: uuid
+        phoneNumber:
+          description: Contact's phone number in E.164 format
+          type: string
+        countryCode:
+          description: Two-letter ISO country code
+          type: string
+        nationalFormat:
+          description: Phone number formatted according to national standards
+          type: string
+        availableChannels:
+          description: Comma-separated list of available messaging channels (SMS, WHATSAPP)
+          type: string
+        defaultChannel:
+          description: Preferred messaging channel for this contact
+          type: string
+        verified:
+          description: Indicates if the contact's phone number has been verified
+          type: boolean
+        createdAt:
+          description: Timestamp when the contact was created
+          type: string
+          format: date-time
+        updatedAt:
+          description: Timestamp when the contact was last updated
+          type: string
+          format: date-time
+    SendMessageToContactRequest:
+      description: Request model for sending a message to a contact using a template
+      type: object
+      required:
+        - customerId
+        - contactId
+        - templateId
+      properties:
+        customerId:
+          description: Unique identifier of the customer
+          type: string
+          format: uuid
+        contactId:
+          description: Unique identifier of the contact
+          type: string
+          format: uuid
+        templateId:
+          description: Unique identifier of the message template
+          type: string
+          format: uuid
+    SendMessageToPhoneNumberRequest:
+      description: Request model for sending a message to a phone number using a template
+      type: object
+      required:
+        - customerId
+        - phoneNumber
+        - templateId
+      properties:
+        customerId:
+          description: Unique identifier of the customer
+          type: string
+          format: uuid
+        phoneNumber:
+          description: Phone number in E.164 format
+          type: string
+        templateId:
+          description: Unique identifier of the message template
+          type: string
+          format: uuid
+    TemplateCreateRequest:
+      description: Request model for creating a new message template
+      type: object
+      required:
+        - customerId
+        - name
+      properties:
+        customerId:
+          description: Unique identifier of the customer creating the template
+          type: string
+          format: uuid
+        name:
+          description: Name of the template for identification purposes
+          type: string
+          minLength: 1
+          maxLength: 100
+    ResponsesTemplateResponse:
+      description: Response model containing template details
+      type: object
+      properties:
+        id:
+          description: Unique identifier of the template
+          type: string
+          format: uuid
+        customerId:
+          description: Customer ID associated with the template
+          type: string
+          format: uuid
+        name:
+          description: Template name
+          type: string
+        category:
+          description: Category of the template (e.g., transactional, marketing)
+          type: string
+          enum:
+            - transactional
+            - marketing
+            - alert
+        rawBody:
+          description: Template content with variable placeholders
+          type: string
+        whatsappTemplateName:
+          description: Associated WhatsApp template name if applicable
+          type: string
+        whatsappTemplateStatus:
+          description: Approval status of WhatsApp template
+          type: string
+          enum:
+            - pending
+            - approved
+            - rejected
+        createdAt:
+          description: Template creation timestamp
+          type: string
+          format: date-time
+        updatedAt:
+          description: Last template update timestamp
+          type: string
+          format: date-time
+    Customer:
+      description: >-
+        Represents a customer account within the Sent platform, including
+        messaging channel configurations and credentials
+      type: object
+      properties:
+        id:
+          description: Unique identifier for the customer
+          type: string
+          format: uuid
+        name:
+          description: Name of the customer organization
+          type: string
+        sendingPhoneNumber:
+          description: Primary phone number used for sending messages
+          type: string
+        smsMessagingProfileId:
+          description: Identifier for the SMS messaging profile
+          type: string
+        smsBearerToken:
+          description: Bearer token for authenticating SMS requests
+          type: string
+        createdAt:
+          description: Timestamp when the customer account was created
+          type: string
+          format: date-time
+        updatedAt:
+          description: Timestamp when the customer account was last updated
+          type: string
+          format: date-time
+    CustomersUpdateCustomerRequest:
+      description: Request model for updating customer information
+      type: object
+      properties:
+        name:
+          description: Updated name of the customer organization
+          type: string
+        sendingPhoneNumber:
+          description: Updated primary phone number for sending messages
+          type: string
+        smsMessagingProfileId:
+          description: Updated SMS messaging profile identifier
+          type: string
+        smsBearerToken:
+          description: Updated bearer token for SMS authentication
+          type: string
+    SMSPayload:
+      description: >-
+        Detailed SMS contact information including validation and formatting
+        details
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/PayloadPhoneNumber'
+        - type: object
+          properties:
+            countryCode:
+              description: ISO country code for the phone number
+              type: string
+              example: US
+            validNumber:
+              description: Indicates if the phone number is valid for SMS delivery
+              type: boolean
+              example: true
+            nationalFormat:
+              description: Locally formatted version of the phone number
+              type: string
+              example: (415) 555-2671
+            payload:
+              description: Additional payload information in JSON format
+              type: string
+              example: '{"carrier":"Verizon","type":"mobile"}'
+    PayloadPhoneNumber:
+      description: Basic phone number payload information
+      type: object
+      properties:
+        id:
+          description: Unique identifier for the phone number record
+          type: string
+          format: uuid
+        sentId:
+          description: Sent platform identifier
+          type: string
+          format: uuid
+        phoneNumber:
+          description: Phone number in E.164 format
+          type: string
+    WhatsAppPayload:
+      description: WhatsApp contact information including profile and verification details
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/PayloadPhoneNumber'
+        - type: object
+          properties:
+            whatsappId:
+              description: Unique WhatsApp identifier for the contact
+              type: string
+            countryCode:
+              description: ISO country code of the phone number
+              type: string
+            numberType:
+              description: Type of phone number (MOBILE, LANDLINE, etc)
+              type: string
+              enum:
+                - MOBILE
+                - LANDLINE
+                - VOIP
+                - UNKNOWN
+            profilePicture:
+              description: URL to the contact's WhatsApp profile picture
+              type: string
+            isBusiness:
+              description: Indicates if the number belongs to a WhatsApp Business account
+              type: boolean
+            invalidRecord:
+              description: Indicates if the WhatsApp account is invalid or deactivated
+              type: boolean
+    CustomersCreateCustomerRequest:
+      type: string
+    MessagesSendMessageToContactResponse:
+      type: object
+      properties:
+        messageId:
+          description: Unique identifier for tracking the message
+          type: string
+          format: uuid
+        status:
+          description: Current status of the message
+          type: string
+          enum:
+            - queued
+            - sending
+            - delivered
+        channel:
+          description: Selected delivery channel
+          type: string
+          enum:
+            - sms
+            - whatsapp
+    MessagesSendMessageToContact400Response:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+    MessagesSendMessageToPhoneNumberResponse:
+      type: object
+      properties:
+        messageId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - queued
+            - sending
+            - delivered
+        channel:
+          type: string
+          enum:
+            - sms
+            - whatsapp
+        contactId:
+          description: ID of the created or existing contact
+          type: string
+          format: uuid
+    TemplatesGetTemplatesForCustomerResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/ResponsesTemplateResponse'
+    CustomersGetAllCustomersResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Customer'
+    SmsGetContactInfoResponse:
+      type: object
+      properties:
+        error:
+          type: string
+    WhatsappGetWhatsappContactResponse:
+      type: object
+      properties:
+        error:
+          type: string
+security:
+  - ApiKey: []
+  - BearerAuth: []
